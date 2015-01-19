@@ -40,11 +40,11 @@ void initialisation_matrice_val(Graphe *G){
 	}
 }
 
-void initialisation_tableau(Graphe *G){
+void initialisation_rang(Graphe *G){
 	G->rang = new int[G->nbSommets];
 
 	for (int i = 0; i<G->nbSommets; i++){
-		G->rang[i]= 0;
+		G->rang[i]= -1;
 	}
 }
 
@@ -58,6 +58,26 @@ void initialisation_arc(Graphe *G){
 		G->tabArc[i].extT = 0;
 		G->tabArc[i].val = 0;
 	}
+}
+
+void initialisation_cal(Graphe *G){
+	G->Cal = new int*[3];
+
+	for(int i=0;i<3;i++){
+		G->Cal[i]= new int[G->nbSommets];
+	}
+
+	for(int i = 0;i<3;i++){
+		for(int j = 0;j<G->nbSommets;j++){
+			if(i == 0){
+				G->Cal[i][j]=j;
+			}
+			else{
+				G->Cal[i][j]=0;
+			}
+		}
+	}
+
 }
 
 void affiche_matrice_adj(const Graphe *G, bool **M){
@@ -179,8 +199,6 @@ void lecture_fichier(Graphe *G){
 
 	affiche_tabArc(G);
 
-
-
 }
 
 bool detection_circuit(Graphe *G){
@@ -202,23 +220,27 @@ bool detection_circuit(Graphe *G){
 }
 
 void rang(Graphe *G){
-	Graphe *G_copy; //On travaille sur la copie du graphe G
+	Graphe G_copy; //On travaille sur la copie du graphe G
 
 	int *tabRang; //tableau de liste chainee rang pour chaque sommet
 	int cmpt=0; //compteur pour avoir les degres
 	int j =1;
 	int tmp = 0;
 	int k = 0; //iteration pour avancer jusqu'au dernier sommet
-	int *racine; //ensemble des racines, indice correspond à k (niveau du rang) 
 
-	G_copy = G;
+	ofstream fichierGraphe;
+
+	fichierGraphe.open("LIM-MOUSTATANE_Rang_C1.txt"); //Sauvegarde dans un fichier les traces
+	fichierGraphe<<"\n";
+	
+	G_copy = *G;
 
 	tabRang = new int[G->nbSommets];
-	racine = new int[G->nbSommets];
+
+	initialisation_rang(G);
 
 	for (int i = 0; i<G->nbSommets;i++){
 		tabRang[i] = 0;
-		racine[i] = -1;
 	}
 	
 
@@ -226,9 +248,9 @@ void rang(Graphe *G){
 			On part de la matrice booleenne, on regarde le nombre de true dans la colonne (ici j) pour chaque ligne (ici i)
 			on les enregistre dans un tableau (tabRang)
 	**/
-	for(int i = 0; i<G_copy->nbSommets; i++){
-		for(int j = 0; j<G_copy->nbSommets;j++){
-			if(G_copy->MAdj[j][i] == true){ 
+	for(int i = 0; i<G_copy.nbSommets; i++){
+		for(int j = 0; j<G_copy.nbSommets;j++){
+			if(G_copy.MAdj[j][i] == true){ 
 				cmpt++;
 				tabRang[i] = cmpt;
 			}
@@ -241,50 +263,71 @@ void rang(Graphe *G){
 
 	do{
 		//garde en memoire les sommets qui sont point d'entree
-		for(int i=0;i<G_copy->nbSommets; i++){
+		for(int i=0;i<G_copy.nbSommets; i++){
 			if (tabRang[i] == 0){
 				if(k == 0){
-					racine[k] = i;
+					G->rang[k] = i;
 				}
 				else{
 					tmp = k-1;
-					if(i != racine[tmp]){
-						cout<<"racine["<<tmp<<"] : "<<racine[tmp]<<endl; 
-						racine[k] = i;
+					if(i != G->rang[tmp]){
+						cout<<"racine["<<tmp<<"] : "<<G->rang[tmp]<<endl; 
+						fichierGraphe<<"racine["<<tmp<<"] : "<<G->rang[tmp]<<endl; 						
+						G->rang[k]=i;
 
 					}
 				}
-				//stabRang[i] = -1;
 			}
-			cout<<i<<" : "<<tabRang[i]<<endl;
+			cout<<"tabRang["<<i<<"] : "<<tabRang[i]<<endl;
+			fichierGraphe<<"tabRang["<<i<<"] : "<<tabRang[i]<<endl;
+
 		}
+		cout<<endl;
+		fichierGraphe<<"\n";
 
 		/**
 		* Affiche l'etat des racines
 		**/
-		for(int i =0; i<G_copy->nbSommets; i++){
-			cout<<i<<": "<<racine[i]<<endl;	
+		for(int i =0; i<G_copy.nbSommets; i++){
+			cout<<"racine["<<i<<"] : "<<G->rang[i]<<endl;	
+			fichierGraphe<<"racine["<<i<<"] : "<<G->rang[i]<<endl;	
+
 		}
 
-		for(int i = 0;i<G_copy->nbSommets;i++){ //parcours toute la ligne du tableau MAdj
-			if(G_copy->MAdj[racine[k]][i] == true){
-				G_copy->MAdj[racine[k]][i] = false;
+
+		for(int i = 0;i<G_copy.nbSommets;i++){ //parcours toute la ligne du tableau MAdj
+			if(G_copy.MAdj[G->rang[k]][i] == true){
+				G_copy.MAdj[G->rang[k]][i] = false;
+					tabRang[G->rang[k]]-=1;
 					tabRang[i] -=1;
 			}
 		}
 
 		cout<<"Apres "<<j<<"eme suppr"<<endl;
+		fichierGraphe<<"Apres "<<j<<"eme suppr"<<endl;
 
-		affiche_matrice_adj(G_copy, G_copy->MAdj);
+		affiche_matrice_adj(&G_copy, G_copy.MAdj);
 		j++;
 		k++;
 
 		cout<<k<<endl;
+		fichierGraphe<<k<<endl;
 		
-	}while(tabRang[k] !=-1 && k<G_copy->nbSommets);
+	}while(tabRang[k] !=-1 && k<G_copy.nbSommets);
 
-	affiche_matrice_adj(G, G->MAdj);
+	for (int lignes = 0; lignes<G_copy.nbSommets; lignes++){
+		fichierGraphe<<"\n";
+		cout<<endl; //permet de revenir a la ligne des que le nombre de colonne max est atteint
+		for(int colonne = 0; colonne<G_copy.nbSommets; colonne++){ 
+			cout<<G_copy.MAdj[lignes][colonne]<<" ";
+			fichierGraphe<<G_copy.MAdj[lignes][colonne]<<" ";
 
+		}
+	}
+
+	cout<<endl;
+	fichierGraphe<<"\n";
+	fichierGraphe.close();
 }
 
 void calcul_rang(Graphe *G){
@@ -370,7 +413,7 @@ void lecture_contrainte(Graphe *G){
 	* recupere ligne par ligne va a la prochaine ligne des qu'il ya \n
 	**/
 	ifstream sourceGraphe ("LIM-MOUSTATANE-C01.txt");
-	ofstream fichierGraphe("Traces.txt");
+	ofstream fichierGraphe("LIM-MOUSTATANE_Contraintes.txt");
 
 	sourceGraphe>>nbTaches;
 
@@ -402,14 +445,13 @@ void lecture_contrainte(Graphe *G){
 		if(term == -1){
 			cout<<". Premiere tache a effectue"<<endl;
 			fichierGraphe<<". Premiere tache a effectue.\n";
-			G->MVal[0][init] = tab[init];
+			G->MVal[0][init] = 0;
 			G->MAdj[0][init] = true;
 
 		}
 		while(term != -1){
 			cout<<". Ne peut s'executer avant la tache "<<term<<endl;
 			fichierGraphe<<". Ne peut s'executer avant la tache "<<term<<".\n";
-			G->MVal[term][init] = tab[init];
 			G->MAdj[term][init] = true;
 			sourceGraphe>>term;
 
@@ -422,16 +464,46 @@ void lecture_contrainte(Graphe *G){
 			fichierGraphe<<"La tache "<<init<<" a pour duree ";
 		}
 	}
+
+	//pour savoir quel est le sommet qui na pas de successeurs
 	for(int i = 0; i<G->nbSommets-1;i++){
 		somme=0;
 
 		for(int j=0;j<G->nbSommets-1;j++){
 			somme+=G->MAdj[i][j];
 		}
-		cout<<somme<<endl;
 		if(somme==0){
 			G->MAdj[i][G->nbSommets-1]=true;
 			G->MVal[i][G->nbSommets-1]=tab[i];
+		}
+	}
+
+	//Affectation des durées, matrice a valeur
+	for(int i = 0; i<G->nbSommets-1;i++){
+		for(int j=0;j<G->nbSommets-1;j++){
+			if(G->MAdj[i][j]==true){
+				G->MVal[i][j]=tab[i];
+			}
+		}
+	}
+
+	fichierGraphe<<"\nMatrice booleenne"<<endl;
+
+
+	for (int lignes = 0; lignes<G->nbSommets; lignes++){
+		fichierGraphe<<"\n";
+		for(int colonne = 0; colonne<G->nbSommets; colonne++){ 
+			fichierGraphe<<G->MAdj[lignes][colonne]<<" ";
+		}
+	}
+
+	fichierGraphe<<"\n\nMatrice valeur"<<endl;
+
+
+	for (int lignes = 0; lignes<G->nbSommets; lignes++){
+		fichierGraphe<<"\n";
+		for(int colonne = 0; colonne<G->nbSommets; colonne++){ 
+			fichierGraphe<<G->MVal[lignes][colonne]<<" ";
 		}
 	}
 
@@ -440,5 +512,66 @@ void lecture_contrainte(Graphe *G){
 	fichierGraphe.close();
 
 	
+}
+
+void calendrier(Graphe *G){
+	cout<<"matrice"<<endl;
+//	lecture_contrainte(G);
+	cout<<"cal"<<endl;
+	int tab_pred[2][G->nbSommets];
+	int cmpt = 0;
+	int sommet = -1;
+	int valeur_ajout = 0;
+
+	//initialisation
+	for(int i =0;i<2;i++){
+		for(int j = 0;j<G->nbSommets;j++){
+			if(i==0){
+				tab_pred[i][j] = j;
+			}
+			else{
+				tab_pred[i][j]=0;
+ 			}
+		}
+	}
+
+	//nombre de predecesseurs
+	for(int i=0;i<G->nbSommets;i++){
+		for(int j = 0;j<G->nbSommets;j++){
+			if(G->MAdj[j][i]==true){
+				cmpt++;
+				tab_pred[1][i] = cmpt;
+			}
+		}
+		cmpt=0;
+
+	}
+
+	//Affichage
+	for(int i=0;i<2;i++){
+		cout<<endl;
+		for(int j=0;j<G->nbSommets;j++){
+			cout<<tab_pred[i][j]<<" ";
+		}
+	}
+
+
+	//Date au plus tot
+	for(int i = 0;i<G->nbSommets;i++){
+		sommet = G->rang[i];
+		cout<<"sommet : "<<sommet<<endl;
+		if(tab_pred[1][sommet] == 0){
+			G->Cal[1][sommet] = 0;
+			valeur_ajout = 0;
+		}
+		else if(tab_pred[1][sommet] == 1){
+			if(G->MAdj[i][sommet] == 1){
+				G->Cal[1][sommet] = valeur_ajout+G->MVal[i][sommet];
+				valeur_ajout = G->MVal[i][sommet];
+			}
+		}
+	}
+	
+	cout<<endl;
 }
 
