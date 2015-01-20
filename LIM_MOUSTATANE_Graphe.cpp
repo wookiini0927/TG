@@ -110,7 +110,7 @@ void affiche_tabArc(const Graphe *G){
 
 	ofstream fichierGraphe;
 
-	fichierGraphe.open("LIM-MOUSTATANE_Arc_G1.txt"); //Sauvegarde dans un fichier les traces
+	fichierGraphe.open("LIM-MOUSTATANE_Arc_G3.txt"); //Sauvegarde dans un fichier les traces
 	fichierGraphe<<"\n";
 	for(int i = 0; i<G->nbArcs; i++){
 		//cout<<"i : "<<i<<endl;
@@ -150,7 +150,7 @@ void lecture_fichier(Graphe *G){
 	* ifstream variableFlux ("nomFichier")
 	* recupere ligne par ligne va a la prochaine ligne des qu'il ya \n
 	**/
-	ifstream sourceGraphe ("LIM-MOUSTATANE-G1.txt");
+	ifstream sourceGraphe ("LIM-MOUSTATANE-G3-circuit.txt");
 
 	sourceGraphe>>G->nbSommets;
 	//cout<<G->nbSommets<<endl;
@@ -184,7 +184,7 @@ void lecture_fichier(Graphe *G){
 
 	ofstream fichierGraphe;
 
-	fichierGraphe.open("LIM-MOUSTATANE_matrice_G1.txt");
+	fichierGraphe.open("LIM-MOUSTATANE_matrice_G3.txt");
 	fichierGraphe<<"Il y a "<<G->nbSommets<<" sommets.\n";
 	for (int lignes = 0; lignes<G->nbSommets; lignes++){
 		fichierGraphe<<"\n";
@@ -230,7 +230,7 @@ void rang(Graphe *G){
 
 	ofstream fichierGraphe;
 
-	fichierGraphe.open("LIM-MOUSTATANE_Rang_C1.txt"); //Sauvegarde dans un fichier les traces
+	fichierGraphe.open("LIM-MOUSTATANE_Rang_C01.txt"); //Sauvegarde dans un fichier les traces
 	fichierGraphe<<"\n";
 	
 	G_copy = *G;
@@ -347,7 +347,7 @@ void calcul_rang(Graphe *G){
 void fermeture_transitive(Graphe *G){
 	ofstream fichierGraphe;
 
-	fichierGraphe.open("LIM-MOUSTATANE_fermeture_G1.txt");
+	fichierGraphe.open("LIM-MOUSTATANE_fermeture_G3.txt");
 
 	fichierGraphe<<"Matrice de transition initiale\n";
 	cout<<"Matrice de transition initiale"<<endl;
@@ -516,13 +516,17 @@ void lecture_contrainte(Graphe *G){
 
 void calendrier(Graphe *G){
 	cout<<"matrice"<<endl;
-//	lecture_contrainte(G);
+	lecture_contrainte(G);
 	cout<<"cal"<<endl;
 	int tab_pred[2][G->nbSommets];
 	int cmpt = 0;
 	int sommet = -1;
 	int valeur_ajout = 0;
-
+	int tmp;
+	int k =0;
+	int i =0;
+	affiche_matrice_adj(G,G->MAdj);
+	initialisation_cal(G);
 	//initialisation
 	for(int i =0;i<2;i++){
 		for(int j = 0;j<G->nbSommets;j++){
@@ -555,21 +559,44 @@ void calendrier(Graphe *G){
 		}
 	}
 
-
+	cmpt = 0;
 	//Date au plus tot
-	for(int i = 0;i<G->nbSommets;i++){
+	while(i<G->nbSommets){
 		sommet = G->rang[i];
-		cout<<"sommet : "<<sommet<<endl;
+		//cout<<"sommet : "<<sommet<<endl;
 		if(tab_pred[1][sommet] == 0){
+			cout<<"if1"<<endl;
 			G->Cal[1][sommet] = 0;
 			valeur_ajout = 0;
 		}
 		else if(tab_pred[1][sommet] == 1){
-			if(G->MAdj[i][sommet] == 1){
-				G->Cal[1][sommet] = valeur_ajout+G->MVal[i][sommet];
-				valeur_ajout = G->MVal[i][sommet];
+			//cout<<"elseif"<<endl;
+			while(G->MAdj[sommet][k] != 1){
+				cout<<"madj["<<k<<"]["<<sommet<<"]"<<G->MAdj[k][sommet]<<endl;
+				k++;
+			}
+			G->Cal[1][sommet] = valeur_ajout+G->MVal[k-1][sommet];
+			valeur_ajout = G->Cal[1][sommet];
+
+		}
+		else{
+			k=0;
+			while(k<G->nbSommets){
+				if(G->MAdj[k][sommet] == 1){
+					tmp = valeur_ajout+G->Cal[1][sommet];
+					if(G->Cal[1][sommet]<tmp){
+						G->Cal[1][sommet] = tmp;
+						valeur_ajout = G->Cal[1][sommet];
+					}
+
+				}
+				k++;
 			}
 		}
+				cout<<"G[1]["<<sommet<<"]"<<G->Cal[1][sommet]<<endl;
+
+		i++;
+
 	}
 	
 	cout<<endl;
